@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iterator> //std::bidirectional_iterator_tag
 #include <cassert>  //assert
+#include <cstddef>
 
 
 template <typename T>
@@ -18,11 +19,14 @@ public:
 
   // Default constructor
   // 
-  List() : first(nullptr), last(nullptr), size_val(0) {}
-
+  List() {
+    first = nullptr;
+    last = nullptr;
+    size_val = 0;
+  }
   // Destructor
   ~List() {
-    assert(false);
+    clear();
   }
 
   //EFFECTS:  returns true if the list is empty
@@ -53,7 +57,7 @@ public:
 
   //EFFECTS:  inserts datum into the front of the list
   void push_front(const T &datum){
-    Node *n = new Node{first, nullptr, datum};
+    Node *n = new Node{nullptr, first, datum};
     if (first) {
       first-> prev = n;
     }
@@ -80,16 +84,50 @@ public:
   //REQUIRES: list is not empty
   //MODIFIES: invalidates all iterators to the removed element
   //EFFECTS:  removes the item at the front of the list
-  void pop_front();
+  void pop_front(){
+    assert(size_val !=0);
+    Node *old = first;
+    first = first->next;
+    if(first){
+      first->prev = nullptr;
+    }
+    else{
+      last = nullptr;
+    }
+    delete old;
+    size_val--;
+  }
 
   //REQUIRES: list is not empty
   //MODIFIES: invalidates all iterators to the removed element
   //EFFECTS:  removes the item at the back of the list
-  void pop_back();
+  void pop_back(){
+    assert(size_val !=0);
+    Node *old = last;
+    last = last->prev;
+    if(last){
+      last->next = nullptr;
+    }
+    else{
+      first = nullptr;
+    }
+    delete old;
+    size_val--;
+  }
 
   //MODIFIES: invalidates all iterators to the removed elements
   //EFFECTS:  removes all items from the list
-  void clear();
+  void clear(){
+    Node *curr = first;
+    while(curr !=nullptr){
+      Node *next = curr->next;
+      delete curr;
+      curr = next;
+    }
+  first = nullptr;
+  last = nullptr;
+  size_val = 0;
+  }
 
   // You should add in a default constructor, destructor, copy constructor,
   // and overloaded assignment operator, if appropriate. If these operations
@@ -110,16 +148,17 @@ private:
 
   Node *first;   // points to first Node in list, or nullptr if list is empty
   Node *last;    // points to last Node in list, or nullptr if list is empty
+  int size_val;
+
 
 public:
   ////////////////////////////////////////
   class Iterator {
   public:
     //OVERVIEW: Iterator interface to List
-
     // Add a default constructor here. The default constructor must set both
     // pointer members to null pointers.
-
+    Iterator() : list_ptr(nullptr), node_ptr(nullptr){}
 
 
     // Add custom implementations of the destructor, copy constructor, and
@@ -147,6 +186,26 @@ public:
     //     violates the REQURES clause.
     // Note: comparing both the list and node pointers should be
     // sufficient to meet these requirements.
+    T& operator* () const{
+      assert(node_ptr != nullptr);
+      return node_ptr -> datum;
+    }
+    Iterator& operator++ (){
+      assert(node_ptr != nullptr);
+      node_ptr = node_ptr -> next;
+      return *this;
+    }
+    Iterator operator++(int){
+      Iterator copy = *this;
+      ++(*this);
+      return copy;
+    }
+    bool operator==(const Iterator &rhs) const {
+      return list_ptr == rhs.list_ptr && node_ptr == rhs.node_ptr;
+    }
+    bool operator!=(const Iterator &rhs) const {
+      return !(*this == rhs);
+    }
 
 
 
@@ -200,35 +259,82 @@ public:
     Node *node_ptr; //current Iterator position is a List node
     // add any additional necessary member variables here
 
-
     // add any friend declarations here
-
+    friend class List;
 
     // construct an Iterator at a specific position in the given List
-    Iterator(const List *lp, Node *np);
+    Iterator(const List *lp, Node *np) : list_ptr(lp), node_ptr(np) {}
 
   };//List::Iterator
   ////////////////////////////////////////
 
   // return an Iterator pointing to the first element
-  Iterator begin() const;
+  Iterator begin() const{
+    return Iterator(this,first);
+  }
 
   // return an Iterator pointing to "past the end"
-  Iterator end() const;
+  Iterator end() const{
+    return Iterator(this, nullptr);
+  }
 
   //REQUIRES: i is a valid, dereferenceable iterator associated with this list
   //MODIFIES: invalidates all iterators to the removed element
   //EFFECTS: Removes a single element from the list container.
   //         Returns An iterator pointing to the element that followed the
   //         element erased by the function call
-  Iterator erase(Iterator i);
+  Iterator erase(Iterator i){
+  Node *target = i.node_ptr;
+  Node *next = target->next;
+
+  if (target->prev) {
+    target->prev->next = target->next;
+  } else {
+    first = target->next;
+  }
+
+  if (target->next) {
+    target->next->prev = target->prev;
+  } else {
+    last = target->prev;
+  }
+
+  delete target;
+  size_val--;
+
+  return Iterator(this, next);
+}
 
   //REQUIRES: i is a valid iterator associated with this list
   //EFFECTS: Inserts datum before the element at the specified position.
   //         Returns an iterator to the the newly inserted element.
-  Iterator insert(Iterator i, const T &datum);
+  Iterator insert(Iterator i, const T &datum){
+    Node *curr = i.node_ptr;
+    Node *new_node = new Node{nullptr, nullptr, datum};
+    if (curr) {
+      new_node->next = curr;
+      new_node->prev = curr->prev;
+      if (curr->prev) {
+        curr->prev->next = new_node;
+      } else {
+        first = new_node;
+      }
 
-};//List
+      curr->prev = new_node;
+    }
+    else { 
+      new_node->prev = last;
+      if (last) {
+        last->next = new_node;
+      } else {
+        first = new_node;
+      }
+
+      last = new_node;
+    }
+    size_val++;
+    return Iterator(this, new_node);
+  }
 
 
 ////////////////////////////////////////////////////////////////////////////////
