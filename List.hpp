@@ -29,6 +29,20 @@ public:
     clear();
   }
 
+  // Copy constructor
+  List(const List<T> &other) : first(nullptr), last(nullptr), size_val(0) {
+    copy_all(other);
+  }
+
+  // Assignment operator
+  List<T> & operator=(const List<T> &rhs) {
+    if (this != &rhs) {
+      clear();
+      copy_all(rhs);
+    }
+    return *this;
+  }
+
   //EFFECTS:  returns true if the list is empty
   bool empty() const{
     return size_val == 0;
@@ -57,9 +71,9 @@ public:
 
   //EFFECTS:  inserts datum into the front of the list
   void push_front(const T &datum){
-    Node *n = new Node{nullptr, first, datum};
+    Node *n = new Node{first, nullptr, datum};
     if (first) {
-      first-> prev = n;
+      first->prev = n;
     }
     else{
       last = n;
@@ -144,7 +158,11 @@ private:
 
   //REQUIRES: list is empty
   //EFFECTS:  copies all nodes from other to this
-  void copy_all(const List<T> &other);
+  void copy_all(const List<T> &other) {
+    for (Node *n = other.first; n != nullptr; n = n->next) {
+      push_back(n->datum);
+    }
+  }
 
   Node *first;   // points to first Node in list, or nullptr if list is empty
   Node *last;    // points to last Node in list, or nullptr if list is empty
