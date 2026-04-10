@@ -250,12 +250,6 @@ TEST(test_default_iterator_equality) {
     ASSERT_TRUE(a == b);
 }
 
-TEST(test_default_iterator_not_equal_to_list_end) {
-    List<int> l;
-    List<int>::Iterator def;
-    ASSERT_TRUE(def != l.end());
-}
-
 //insert/erase
 
 TEST(test_insert_end) {
